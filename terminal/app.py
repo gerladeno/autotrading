@@ -89,11 +89,7 @@ class Graph(Engine, tkinter.Canvas):
                          self.height - self.padding, width=self.line_width, arrow=tkinter.LAST, fill='#FFD700')
         self.create_line(self.padding, self.height - self.padding, self.padding, self.padding, width=self.line_width,
                          arrow=tkinter.LAST, fill='#FFD700')
-        for tick in self.ticks:
-            if self.max < tick.ask:
-                self.max = tick.ask
-            if self.min > tick.bid:
-                self.min = tick.bid
+        self.calc_min_max()
         for i in range(len(self.ticks)):
             self.draw_tick(self.ticks[i], i)
 
@@ -127,7 +123,7 @@ class Graph(Engine, tkinter.Canvas):
             else:
                 self.on_pause = False
                 self.delay = self.default_delay
-                self.after(self.delay, self.step_in)
+                self.step_in()
         elif self.on_pause:
             if key == 'Right':
                 if self.position < len(self.ticks):
@@ -136,6 +132,15 @@ class Graph(Engine, tkinter.Canvas):
             elif key == 'Left' and self.position > 0:
                 self.position -= 1
                 self.step_in()
+
+    def calc_min_max(self):
+        self.max = self.ticks[0].ask
+        self.min = self.ticks[0].bid
+        for tick in self.ticks:
+            if self.max < tick.ask:
+                self.max = tick.ask
+            if self.min > tick.bid:
+                self.min = tick.bid
 
     def get_current_state(self) -> State:
         return self.ticks[self.position - 1]

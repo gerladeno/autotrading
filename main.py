@@ -5,7 +5,7 @@ from terminal.app import App
 
 
 def main():
-    ds = TicksProvider()
+    ds = TicksProvider(real=True)
     root = Tk()
     app = App(ds.symbol, ds.get_ticks())
     root.mainloop()

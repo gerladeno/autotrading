@@ -3,7 +3,7 @@ class ViewConfig:
         self.FMT = "%Y-%m-%dT%H:%M:%S.%fZ"
         self.WINDOW_WIDTH = 1440
         self.WINDOW_HEIGHT = 900
-        self.DELAY = 10
+        self.DELAY = 100
         self.BACKGROUND = "black"
         self.CURSOR = "pencil"
         self.LINE_WIDTH = 2
