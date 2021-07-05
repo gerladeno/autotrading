@@ -1,4 +1,5 @@
 from enum import Enum
+from terminal.symbol_config import symbol_config, SymbolConfig
 
 
 class Trade:
@@ -10,11 +11,12 @@ class Trade:
 class Position:
     contract_size = 1
 
-    def __init__(self):
+    def __init__(self, symbol: str):
         self.price: float = 0
         self.volume: float = 0
         self.floating: float = 0
         self.margin: float = self.volume * self.contract_size
+        self.config: SymbolConfig = symbol_config[symbol]
 
     def trade(self, trade: Trade) -> float:
         profit = 0
@@ -31,6 +33,7 @@ class Position:
             if abs(self.volume) < abs(trade.volume):
                 self.price = trade.price
             self.volume += trade.volume
+        profit += self._charge_commission(trade.volume)
         return profit * self.contract_size
 
     def update_position(self, bid: float, ask: float):
@@ -39,6 +42,12 @@ class Position:
         else:
             self.floating = (ask - self.price) * self.volume * self.contract_size
         self.margin = abs(self.volume) * self.contract_size
+
+    def _charge_commission(self, volume: float) -> float:
+        if volume > 0:
+            return -volume * self.config.commission_buy
+        else:
+            return volume * self.config.commission_sell
 
 
 class Action(Enum):
@@ -67,46 +76,50 @@ class Operation:
 class Account:
     def __init__(self, balance: float = 0):
         self.balance = balance
-        self.position = Position()
+        self.positions: dict[str:Position] = {}
         self.equity = balance
         self.leverage = 200
         self.free_margin = 0
         self.history: list[Operation] = []
 
     def update_account(self, bid: float, ask: float) -> bool:
-        self.position.update_position(bid, ask)
-        self.equity = self.balance + self.position.floating
-        self.free_margin = self.equity - self.position.margin / self.leverage
-        if self.equity > 0:
-            return True
-        else:
-            self._margin_call(bid, ask)
-            return False
+        for symbol in self.positions:
+            self.positions[symbol].update_position(bid, ask)
+            self.equity = self.balance + self.positions[symbol].floating
+            self.free_margin = self.equity - self.positions[symbol].margin / self.leverage
+            if self.equity > 0:
+                return True
+            else:
+                self._margin_call(symbol, bid, ask)
+                return False
 
-    def trade(self, bid: float, ask: float, volume: float):
+    def trade(self, symbol: str, bid: float, ask: float, volume: float):
+        if symbol not in self.positions:
+            self.positions[symbol] = Position(symbol)
         if volume > 0:
             price = ask
         else:
             price = bid
-        profit = self.position.trade(Trade(volume, price))
-        self._trade_op(volume, price, profit)
+        profit = self.positions[symbol].trade(Trade(volume, price))
+        self._trade_op(symbol, volume, price, profit)
         self.balance += profit
         self.update_account(bid, ask)
 
-    def _margin_call(self, bid: float, ask: float):
-        if self.position.volume > 0:
+    def _margin_call(self, symbol: str, bid: float, ask: float):
+        if self.positions[symbol].volume > 0:
             price = bid
         else:
             price = ask
         self.history.append(Operation(Action.margin_call, deal_price=price))
 
-    def _trade_op(self, volume, price, profit):
+    def _trade_op(self, symbol: str, volume: float, price: float, profit: float):
         if volume > 0:
             action = Action.buy
         else:
             action = Action.sell
-        self.history.append(Operation(action, profit, volume, self.position.volume, price, self.position.price))
+        self.history.append(
+            Operation(action, profit, volume, self.positions[symbol].volume, price, self.positions[symbol].price))
 
-    def deposit(self, amount: float, bid: float, ask: float):
+    def deposit(self, amount: float):
         self.balance += amount
         self.history.append(Operation(Action.deposit))
