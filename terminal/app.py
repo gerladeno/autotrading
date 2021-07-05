@@ -9,7 +9,7 @@ class Graph(Engine, tkinter.Canvas):
     def __init__(self, data_source: list[(int, float, float)], symbol: str):
         tkinter.Canvas.__init__(self,
                                 width=config.view.WINDOW_WIDTH,
-                                height=config.view.WINDOW_HEIGHT,
+                                height=config.view.WINDOW_HEIGHT - config.view.ACCOUNT_DATA_HEIGHT,
                                 bg=config.view.BACKGROUND,
                                 cursor=config.view.CURSOR)
         Engine.__init__(self, data_source, symbol)
@@ -34,8 +34,8 @@ class Graph(Engine, tkinter.Canvas):
         self.max = self.current_state.ask
         self.min = self.current_state.bid
         self.process_tick()
-        self.draw_account_data()
         self.draw_graph()
+        self.draw_account_data()
         self.dashed_lines()
         self.bind_all("<Key>", self.key_pressed)
         self.after(self.delay, self.step_in)
@@ -45,6 +45,7 @@ class Graph(Engine, tkinter.Canvas):
             if self.get_next_state():
                 self.process_tick()
                 self.draw_graph()
+                self.draw_account_data()
                 self.move_dashed_lines()
                 self.after(self.delay, self.step_in)
             else:
@@ -108,6 +109,24 @@ class Graph(Engine, tkinter.Canvas):
                          text=str(self.ticks[self.position - 1].bid),
                          fill="#ffffff", tag="bid_price")
 
+    def draw_account_data(self):
+        self.delete("account_data")
+        self.create_text(self.width * 0.9, 4 * self.padding, text=f"Balance: {self.account.balance:0.2f}",
+                         fill="#dddddd", tag="account_data")
+        self.create_text(self.width * 0.9, 8 * self.padding, text=f"Equity: {self.account.equity:0.2f}",
+                         fill="#dddddd", tag="account_data")
+        self.create_text(self.width * 0.9, 12 * self.padding, text=f"Free margin: {self.account.free_margin:0.2f}",
+                         fill="#dddddd", tag="account_data")
+        i = 0
+        for symbol in self.account.positions:
+            self.create_text(self.width * 0.9, (16 + i * 8) * self.padding,
+                             text=f"{symbol} Open volume: {self.account.positions[symbol].volume:0.2f}", fill="#dddddd",
+                             tag="account_data")
+            self.create_text(self.width * 0.9, (20 + i * 8) * self.padding,
+                             text=f"{symbol} Profit: {self.account.positions[symbol].floating:0.2f}", fill="#dddddd",
+                             tag="account_data")
+            i += 1
+
     def y_ask(self, tick: State) -> int:
         return int(
             self.height * (1 - (tick.ask - self.min) / (self.max - self.min + 4 * self.padding))) - 2 * self.padding
@@ -144,20 +163,6 @@ class Graph(Engine, tkinter.Canvas):
             if self.min > tick.bid:
                 self.min = tick.bid
 
-    def draw_account_data(self):
-        frame = tkinter.Frame(self)
-        self.create_window(0, 0, window=frame)
-        lbl = tkinter.Label(frame, text=self.symbol)
-        lbl.grid(column=0, row=0)
-        txt = tkinter.Entry(frame, width=6)
-        txt.grid(column=1, row=0)
-        buy = tkinter.Button(frame, text="Buy", command=self.trade((txt.get())))
-        buy.grid(column=2, row=0)
-        sell = tkinter.Button(frame, text="Sell", command=self.trade((txt.get())))
-        sell.grid(column=2, row=1)
-        frame.pack()
-        self.pack()
-
 
 class App(tkinter.Frame):
     def __init__(self, name: str, data_source: list[(int, float, float)]):
@@ -165,3 +170,17 @@ class App(tkinter.Frame):
         self.master.title(name)
         self.graph = Graph(data_source, name)
         self.pack()
+        self.draw_buy_sell_buttons()
+
+    def draw_buy_sell_buttons(self):
+        frame = tkinter.Frame(self)
+        lbl = tkinter.Label(frame, text=self.graph.symbol)
+        lbl.grid(column=0, row=0)
+        volume = tkinter.DoubleVar()
+        txt = tkinter.Entry(frame, width=6, textvariable=volume)
+        txt.grid(column=1, row=0)
+        buy = tkinter.Button(frame, text="Buy", command=lambda: self.graph.trade(volume.get()))
+        buy.grid(column=2, row=0)
+        sell = tkinter.Button(frame, text="Sell", command=lambda: self.graph.trade(-volume.get()))
+        sell.grid(column=2, row=1)
+        frame.pack(side=tkinter.LEFT)

@@ -21,4 +21,5 @@ class Engine:
             return False
 
     def trade(self, volume: float):
-        self.account.trade(self.symbol, *self.current_state.get_price(), 0)
+        if volume != 0:
+            self.account.trade(self.symbol, *self.current_state.get_price(), volume)
