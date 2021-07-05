@@ -19,3 +19,6 @@ class State:
 
     def get_price(self) -> (float, float):
         return self.bid, self.ask
+
+    def get_mean_price(self) -> float:
+        return (self.bid + self.ask) / 2.0

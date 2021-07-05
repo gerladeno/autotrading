@@ -6,4 +6,6 @@ class SymbolConfig:
         self.swap_sell = swap_sell
 
 
-symbol_config = {'BTCUSD': SymbolConfig(0.01, 0.005, 0, 0)}
+symbol_config = {
+    'BTCUSD': SymbolConfig(0.01, 0.005, 0, 0),
+}

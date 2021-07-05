@@ -6,7 +6,7 @@ from terminal.state import State
 
 
 class Graph(Engine, tkinter.Canvas):
-    def __init__(self, data_source: list[(int, float, float)], symbol: str):
+    def __init__(self, data_source: list[(int, float, float)], symbol: str, strategy):
         tkinter.Canvas.__init__(self,
                                 width=config.view.WINDOW_WIDTH,
                                 height=config.view.WINDOW_HEIGHT - config.view.ACCOUNT_DATA_HEIGHT,
@@ -26,6 +26,10 @@ class Graph(Engine, tkinter.Canvas):
         self.default_delay = config.view.DELAY
         self.delay = 1
         self.on_pause = False
+        # init strategy
+        self.strategy = strategy
+        if self.strategy:
+            self.strategy.engine = self
 
         self.init()
         self.pack()
@@ -48,6 +52,8 @@ class Graph(Engine, tkinter.Canvas):
                 self.draw_account_data()
                 self.move_dashed_lines()
                 self.after(self.delay, self.step_in)
+                if self.strategy:
+                    self.strategy.logic()
             else:
                 pass
                 # sys.exit(0)
@@ -165,10 +171,10 @@ class Graph(Engine, tkinter.Canvas):
 
 
 class App(tkinter.Frame):
-    def __init__(self, name: str, data_source: list[(int, float, float)]):
+    def __init__(self, name: str, data_source: list[(int, float, float)], strategy=None):
         super(App, self).__init__()
         self.master.title(name)
-        self.graph = Graph(data_source, name)
+        self.graph = Graph(data_source, name, strategy)
         self.pack()
         self.draw_buy_sell_buttons()
 

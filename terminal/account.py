@@ -87,11 +87,10 @@ class Account:
             self.positions[symbol].update_position(bid, ask)
             self.equity = self.balance + self.positions[symbol].floating
             self.free_margin = self.equity - self.positions[symbol].margin / self.leverage
-            if self.equity > 0:
-                return True
-            else:
+            if self.equity <= 0:
                 self._margin_call(symbol, bid, ask)
                 return False
+        return True
 
     def trade(self, symbol: str, bid: float, ask: float, volume: float):
         if symbol not in self.positions:
@@ -123,3 +122,9 @@ class Account:
     def deposit(self, amount: float):
         self.balance += amount
         self.history.append(Operation(Action.deposit))
+
+    def print_account_data(self):
+        print(f"balance: {self.balance:0.2f}\nequity: {self.equity:0.2f}\nfree margin: {self.free_margin:0.2f}")
+        for symbol in self.positions:
+            print(f"price: {self.positions[symbol].price:0.5f}\nvolume: {self.positions[symbol].volume:0.2f}\n"
+                  f"floating: {self.positions[symbol].floating:0.2f}")

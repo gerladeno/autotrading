@@ -15,7 +15,8 @@ class Engine:
         try:
             self.current_state = State(*next(self.ds))
             self.states.append(self.current_state)
-            self.account.update_account(*self.current_state.get_price())
+            if not self.account.update_account(*self.current_state.get_price()):
+                return False
             return True
         except StopIteration:
             return False
@@ -23,3 +24,6 @@ class Engine:
     def trade(self, volume: float):
         if volume != 0:
             self.account.trade(self.symbol, *self.current_state.get_price(), volume)
+
+    def get_current_state(self) -> State:
+        return self.current_state
