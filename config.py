@@ -5,9 +5,10 @@ class ViewConfig:
         self.WINDOW_HEIGHT = 900
         self.DELAY = 100
         self.BACKGROUND = "black"
-        self.CURSOR = "pencil"
+        self.CURSOR = ""
         self.LINE_WIDTH = 2
         self.TICK_SIZE = 2
+        self.ACCOUNT_DATA_HEIGHT = 200
 
 
 class Config:

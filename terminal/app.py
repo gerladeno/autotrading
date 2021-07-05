@@ -6,16 +6,16 @@ from terminal.state import State
 
 
 class Graph(Engine, tkinter.Canvas):
-    def __init__(self, data_source: list[(int, float, float)]):
+    def __init__(self, data_source: list[(int, float, float)], symbol: str):
         tkinter.Canvas.__init__(self,
                                 width=config.view.WINDOW_WIDTH,
                                 height=config.view.WINDOW_HEIGHT,
                                 bg=config.view.BACKGROUND,
                                 cursor=config.view.CURSOR)
-        Engine.__init__(self, data_source)
+        Engine.__init__(self, data_source, symbol)
         self.padding = 4
         self.width = config.view.WINDOW_WIDTH
-        self.height = config.view.WINDOW_HEIGHT
+        self.height = config.view.WINDOW_HEIGHT - config.view.ACCOUNT_DATA_HEIGHT
         self.tick_size = config.view.TICK_SIZE
         self.line_width = config.view.LINE_WIDTH
         self.capacity = int((self.width * 0.8 - 2 * self.padding - 2 * self.line_width) / self.tick_size)
@@ -34,6 +34,7 @@ class Graph(Engine, tkinter.Canvas):
         self.max = self.current_state.ask
         self.min = self.current_state.bid
         self.process_tick()
+        self.draw_account_data()
         self.draw_graph()
         self.dashed_lines()
         self.bind_all("<Key>", self.key_pressed)
@@ -50,6 +51,7 @@ class Graph(Engine, tkinter.Canvas):
                 pass
                 # sys.exit(0)
         else:
+            self.current_state = self.ticks[self.position]
             self.draw_graph()
             self.move_dashed_lines()
             self.after(self.delay, self.step_in)
@@ -107,12 +109,12 @@ class Graph(Engine, tkinter.Canvas):
                          fill="#ffffff", tag="bid_price")
 
     def y_ask(self, tick: State) -> int:
-        return 2 * self.padding + int(
-            self.height * (1 - (tick.ask - self.min) / (self.max - self.min + 4 * self.padding)))
+        return int(
+            self.height * (1 - (tick.ask - self.min) / (self.max - self.min + 4 * self.padding))) - 2 * self.padding
 
     def y_bid(self, tick: State) -> int:
-        return 2 * self.padding + int(
-            self.height * (1 - (tick.bid - self.min) / (self.max - self.min + 4 * self.padding)))
+        return int(
+            self.height * (1 - (tick.bid - self.min) / (self.max - self.min + 4 * self.padding))) - 2 * self.padding
 
     def key_pressed(self, event: tkinter.Event):
         key = event.keysym
@@ -142,13 +144,24 @@ class Graph(Engine, tkinter.Canvas):
             if self.min > tick.bid:
                 self.min = tick.bid
 
-    def get_current_state(self) -> State:
-        return self.ticks[self.position - 1]
+    def draw_account_data(self):
+        frame = tkinter.Frame(self)
+        self.create_window(0, 0, window=frame)
+        lbl = tkinter.Label(frame, text=self.symbol)
+        lbl.grid(column=0, row=0)
+        txt = tkinter.Entry(frame, width=6)
+        txt.grid(column=1, row=0)
+        buy = tkinter.Button(frame, text="Buy", command=self.trade((txt.get())))
+        buy.grid(column=2, row=0)
+        sell = tkinter.Button(frame, text="Sell", command=self.trade((txt.get())))
+        sell.grid(column=2, row=1)
+        frame.pack()
+        self.pack()
 
 
 class App(tkinter.Frame):
     def __init__(self, name: str, data_source: list[(int, float, float)]):
         super(App, self).__init__()
         self.master.title(name)
-        self.graph = Graph(data_source)
+        self.graph = Graph(data_source, name)
         self.pack()

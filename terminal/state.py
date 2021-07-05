@@ -18,4 +18,4 @@ class State:
         self.timestamp = Time(unix)
 
     def get_price(self) -> (float, float):
-        return self.ask, self.bid
+        return self.bid, self.ask
